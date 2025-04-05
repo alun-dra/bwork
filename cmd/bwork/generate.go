@@ -23,9 +23,8 @@ func runGenerate(entityType, name string) {
 func generateController(name string) {
 	formattedName := strings.ToLower(name)
 	structName := strings.Title(formattedName)
-	content := fmt.Sprintf(`package controllers
 
-import "fmt"
+	content := fmt.Sprintf(`package controllers
 
 func %sControllerLogic() string {
     return "Lógica del negocio para %s ejecutada 🚀"
@@ -42,6 +41,7 @@ func %sControllerLogic() string {
 func generateModel(name string) {
 	formattedName := strings.ToLower(name)
 	structName := strings.Title(formattedName)
+
 	content := fmt.Sprintf(`package models
 
 type %s struct {
@@ -60,6 +60,7 @@ type %s struct {
 func generateView(name string) {
 	formattedName := strings.ToLower(name)
 	handlerName := strings.Title(formattedName) + "View"
+
 	content := fmt.Sprintf(`package views
 
 import (
