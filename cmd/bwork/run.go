@@ -1,20 +1,18 @@
 package main
 
 import (
-    "fmt"
-    "log"
-    "net/http"
-
-    "app"
+	"fmt"
+	"os"
+	"os/exec"
 )
 
 func runServer() {
-    mux := http.NewServeMux()
-    app.SetupRoutes(mux)
-
-    fmt.Println("Servidor escuchando en http://localhost:8081 ...")
-    err := http.ListenAndServe(":8081", mux)
-    if err != nil {
-        log.Fatal("Error al iniciar el servidor:", err)
-    }
+	fmt.Println("🚀 Ejecutando servidor desde app/main.go...")
+	cmd := exec.Command("go", "run", "app/main.go")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println("Error al ejecutar el servidor:", err)
+	}
 }
