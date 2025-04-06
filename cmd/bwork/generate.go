@@ -15,6 +15,10 @@ func runGenerate(entityType, name string) {
 		generateModel(name)
 	case "view":
 		generateView(name)
+	case "module":
+		generateModel(name)
+		generateController(name)
+		generateView(name)
 	default:
 		fmt.Printf("Tipo '%s' no soportado para generar\n", entityType)
 	}
