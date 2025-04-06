@@ -89,6 +89,7 @@ func %s(w http.ResponseWriter, r *http.Request) {
 func registerRoute(path, handler string) {
 	routesFile := "app/routes.go"
 
+	// Detectar el módulo desde go.mod
 	moduleName := "app"
 	if data, err := os.ReadFile("go.mod"); err == nil {
 		lines := strings.Split(string(data), "\n")
@@ -102,6 +103,7 @@ func registerRoute(path, handler string) {
 
 	viewImport := fmt.Sprintf("\"%s/views\"", moduleName)
 
+	// Si no existe routes.go, crearlo con bloque de import
 	if _, err := os.Stat(routesFile); os.IsNotExist(err) {
 		base := fmt.Sprintf(`package main
 
@@ -115,11 +117,15 @@ func SetupRoutes(mux *http.ServeMux) {
 }
 `, viewImport)
 		os.WriteFile(routesFile, []byte(base), 0644)
+		fmt.Println("✅ Archivo routes.go creado")
+		return
 	}
 
+	// Leer contenido
 	data, _ := os.ReadFile(routesFile)
 	lines := strings.Split(string(data), "\n")
 
+	// 1. Verificar si ya tiene el import
 	hasImport := false
 	for _, line := range lines {
 		if strings.Contains(line, viewImport) {
@@ -127,15 +133,27 @@ func SetupRoutes(mux *http.ServeMux) {
 			break
 		}
 	}
+
+	// 2. Asegurar que sea import (...) si aún no lo es
+	for i, line := range lines {
+		if strings.HasPrefix(line, "import ") && !strings.Contains(line, "(") {
+			singleImport := strings.TrimSpace(strings.TrimPrefix(line, "import"))
+			lines[i] = "import (\n\t" + singleImport + "\n)"
+			break
+		}
+	}
+
+	// 3. Agregar el import views si no existe
 	if !hasImport {
 		for i, line := range lines {
-			if strings.Contains(line, "import (") {
-				lines = append(lines[:i+1], append([]string{viewImport}, lines[i+1:]...)...)
+			if strings.HasPrefix(line, "import (") {
+				lines = append(lines[:i+1], append([]string{"\t" + viewImport}, lines[i+1:]...)...)
 				break
 			}
 		}
 	}
 
+	// 4. Agregar la línea mux.HandleFunc si no está
 	routeLine := fmt.Sprintf("\tmux.HandleFunc(\"/%s\", views.%s)", path, handler)
 	hasRoute := false
 	for _, line := range lines {
@@ -153,6 +171,7 @@ func SetupRoutes(mux *http.ServeMux) {
 		}
 	}
 
+	// Guardar el archivo
 	output := strings.Join(lines, "\n")
 	os.WriteFile(routesFile, []byte(output), 0644)
 
