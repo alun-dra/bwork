@@ -82,4 +82,46 @@ func %s(w http.ResponseWriter, r *http.Request) {
 	fileName := filepath.Join(dir, formattedName+"_view.go")
 	os.WriteFile(fileName, []byte(content), 0644)
 	fmt.Printf("Vista '%s' generada ✅\n", fileName)
+
+	// Agregar automáticamente la ruta
+	registerRoute(formattedName, handlerName)
+}
+
+func registerRoute(path, handler string) {
+	routesFile := "app/routes.go"
+
+	// Si no existe, crearlo con estructura base
+	if _, err := os.Stat(routesFile); os.IsNotExist(err) {
+		base := `package main
+
+import (
+	"net/http"
+)
+
+func SetupRoutes(mux *http.ServeMux) {
+}
+`
+		os.WriteFile(routesFile, []byte(base), 0644)
+	}
+
+	// Leer archivo
+	data, _ := os.ReadFile(routesFile)
+	text := string(data)
+
+	// Agregar import si no existe
+	if !strings.Contains(text, `"app/views"`) {
+		text = strings.Replace(text, "import (", "import (\n\t\"app/views\"", 1)
+	}
+
+	// Preparar línea de ruta
+	routeLine := fmt.Sprintf("mux.HandleFunc(\"/%s\", views.%s)", path, handler)
+
+	// Insertar dentro de SetupRoutes si no está ya
+	if !strings.Contains(text, routeLine) {
+		text = strings.Replace(text, "{", "{\n\t"+routeLine, 1)
+	}
+
+	// Guardar archivo actualizado
+	os.WriteFile(routesFile, []byte(text), 0644)
+	fmt.Printf("🔗 Ruta '/%s' registrada en app/routes.go\n", path)
 }
