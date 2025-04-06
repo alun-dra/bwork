@@ -16,34 +16,40 @@ func runInit() {
 	os.MkdirAll("app/views", 0755)
 	os.MkdirAll("app/config", 0755)
 
-	// Crear archivos base
+	// Archivos de configuración
 	os.WriteFile("bwork.json", []byte("{\n  \"name\": \"mi-backend\",\n  \"version\": \"0.0.1\"\n}"), 0644)
 	os.WriteFile(".env", []byte("DB_HOST=localhost\nDB_PORT=3306\nDB_USER=root\nDB_PASSWORD=password\nDB_NAME=bworkdb\n"), 0644)
 	os.WriteFile(".gitignore", []byte(".env\n.bwork_modules/\n*.log\n*.tmp\n*.out\n"), 0644)
 
-	// Contenido de main.go con servidor funcional
+	// Crear go.mod
+	moduleContent := `module app
+
+go 1.20
+`
+	os.WriteFile("go.mod", []byte(moduleContent), 0644)
+
+	// main.go con servidor funcional
 	mainContent := `package main
 
 import (
 	"fmt"
 	"log"
 	"net/http"
+	"app"
 )
 
 func main() {
 	fmt.Println("🚀 Servidor iniciado en http://localhost:8081")
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "¡Bienvenido a tu backend con BWORK! 🎉")
-	})
+	mux := http.NewServeMux()
+	app.SetupRoutes(mux)
 
-	err := http.ListenAndServe(":8081", nil)
+	err := http.ListenAndServe(":8081", mux)
 	if err != nil {
 		log.Fatal("❌ Error al iniciar el servidor:", err)
 	}
 }
 `
-
 	os.Mkdir("app", 0755)
 	os.WriteFile(filepath.Join("app", "main.go"), []byte(mainContent), 0644)
 
