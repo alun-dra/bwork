@@ -8,7 +8,7 @@ import (
 
 func runServer() {
 	fmt.Println("🚀 Ejecutando servidor desde app/main.go...")
-	cmd := exec.Command("go", "run", "app/main.go")
+	cmd := exec.Command("go", "run", "./app")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
