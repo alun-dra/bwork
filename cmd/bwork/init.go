@@ -66,6 +66,18 @@ func main() {
 	}
 }
 `
+
+	// Crear app/routes.go vacío con SetupRoutes
+	routesContent := `package app
+
+import "net/http"
+
+func SetupRoutes(mux *http.ServeMux) {
+	// Aquí se registrarán las rutas automáticamente 🚀
+}
+`
+	os.WriteFile(filepath.Join("app", "routes.go"), []byte(routesContent), 0644)
+
 	os.Mkdir("app", 0755)
 	os.WriteFile(filepath.Join("app", "main.go"), []byte(mainContent), 0644)
 
