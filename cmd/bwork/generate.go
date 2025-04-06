@@ -88,47 +88,68 @@ func %s(w http.ResponseWriter, r *http.Request) {
 }
 
 func registerRoute(path, handler string) {
-	routesFile := filepath.Join("app", "routes.go")
+	routesFile := "app/routes.go"
 
-	// Si no existe, crear con estructura base
+	// Si no existe, crear estructura base
 	if _, err := os.Stat(routesFile); os.IsNotExist(err) {
 		base := `package main
 
-    import (
-        "net/http"
-        "app/app/views"
-    )
+import (
+	"net/http"
+)
 
-    func SetupRoutes(mux *http.ServeMux) {
-        // Aquí se registrarán las rutas automáticamente 🚀
-    }
+func SetupRoutes(mux *http.ServeMux) {
+	// Aquí se registrarán las rutas automáticamente 🚀
+}
 `
 		os.WriteFile(routesFile, []byte(base), 0644)
 	}
 
-	// Leer archivo
+	// Leer archivo actual
 	data, _ := os.ReadFile(routesFile)
-	text := string(data)
+	lines := strings.Split(string(data), "\n")
 
-	// Asegurar que el import de "app/app/views" exista
-	if !strings.Contains(text, `"app/app/views"`) {
-		text = strings.Replace(text, "import (", "import (\n\t\"app/app/views\"", 1)
+	// Verificar si ya tiene el import
+	importIndex := -1
+	for i, line := range lines {
+		if strings.Contains(line, `"app/app/views"`) {
+			importIndex = i
+			break
+		}
 	}
 
-	// Preparar línea de ruta
+	// Insertar import si no existe
+	if importIndex == -1 {
+		for i, line := range lines {
+			if strings.Contains(line, "import (") {
+				lines = append(lines[:i+1], append([]string{"\t\"app/app/views\""}, lines[i+1:]...)...)
+				break
+			}
+		}
+	}
+
+	// Preparar la línea a insertar
 	routeLine := fmt.Sprintf("\tmux.HandleFunc(\"/%s\", views.%s)", path, handler)
 
-	// Evitar duplicado
-	if !strings.Contains(text, routeLine) {
-		// Insertar justo antes del comentario o al final del SetupRoutes
-		if strings.Contains(text, "// Aquí se registrarán las rutas automáticamente") {
-			text = strings.Replace(text, "// Aquí se registrarán las rutas automáticamente", routeLine+"\n\t// Aquí se registrarán las rutas automáticamente", 1)
-		} else {
-			text = strings.Replace(text, "{", "{\n"+routeLine, 1)
+	// Insertar dentro de SetupRoutes si no existe aún
+	alreadyExists := false
+	for _, line := range lines {
+		if strings.Contains(line, routeLine) {
+			alreadyExists = true
+			break
+		}
+	}
+	if !alreadyExists {
+		for i, line := range lines {
+			if strings.Contains(line, "SetupRoutes") && strings.Contains(line, "{") {
+				lines = append(lines[:i+1], append([]string{routeLine}, lines[i+1:]...)...)
+				break
+			}
 		}
 	}
 
 	// Guardar archivo actualizado
-	os.WriteFile(routesFile, []byte(text), 0644)
+	output := strings.Join(lines, "\n")
+	os.WriteFile(routesFile, []byte(output), 0644)
 	fmt.Printf("🔗 Ruta '/%s' registrada en app/routes.go\n", path)
 }
