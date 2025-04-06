@@ -109,7 +109,7 @@ func SetupRoutes(mux *http.ServeMux) {
 	text := string(data)
 
 	// Agregar import si no existe
-	if !strings.Contains(text, `"app/views"`) {
+	if !strings.Contains(text, `"app/app/views"`) {
 		text = strings.Replace(text, "import (", "import (\n\t\"app/views\"", 1)
 	}
 
