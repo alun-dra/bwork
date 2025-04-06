@@ -88,18 +88,20 @@ func %s(w http.ResponseWriter, r *http.Request) {
 }
 
 func registerRoute(path, handler string) {
-	routesFile := "app/routes.go"
+	routesFile := filepath.Join("app", "routes.go")
 
-	// Si no existe, crearlo con estructura base
+	// Si no existe, crear con estructura base
 	if _, err := os.Stat(routesFile); os.IsNotExist(err) {
 		base := `package main
 
-import (
-	"net/http"
-)
+    import (
+        "net/http"
+        "app/app/views"
+    )
 
-func SetupRoutes(mux *http.ServeMux) {
-}
+    func SetupRoutes(mux *http.ServeMux) {
+        // Aquí se registrarán las rutas automáticamente 🚀
+    }
 `
 		os.WriteFile(routesFile, []byte(base), 0644)
 	}
@@ -108,17 +110,22 @@ func SetupRoutes(mux *http.ServeMux) {
 	data, _ := os.ReadFile(routesFile)
 	text := string(data)
 
-	// Agregar import si no existe
+	// Asegurar que el import de "app/app/views" exista
 	if !strings.Contains(text, `"app/app/views"`) {
-		text = strings.Replace(text, "import (", "import (\n\t\"app/views\"", 1)
+		text = strings.Replace(text, "import (", "import (\n\t\"app/app/views\"", 1)
 	}
 
 	// Preparar línea de ruta
-	routeLine := fmt.Sprintf("mux.HandleFunc(\"/%s\", views.%s)", path, handler)
+	routeLine := fmt.Sprintf("\tmux.HandleFunc(\"/%s\", views.%s)", path, handler)
 
-	// Insertar dentro de SetupRoutes si no está ya
+	// Evitar duplicado
 	if !strings.Contains(text, routeLine) {
-		text = strings.Replace(text, "{", "{\n\t"+routeLine, 1)
+		// Insertar justo antes del comentario o al final del SetupRoutes
+		if strings.Contains(text, "// Aquí se registrarán las rutas automáticamente") {
+			text = strings.Replace(text, "// Aquí se registrarán las rutas automáticamente", routeLine+"\n\t// Aquí se registrarán las rutas automáticamente", 1)
+		} else {
+			text = strings.Replace(text, "{", "{\n"+routeLine, 1)
+		}
 	}
 
 	// Guardar archivo actualizado
