@@ -47,35 +47,35 @@ func runInit() {
 	// Crear app/main.go
 	mainContent := `package main
 
-import (
-	"fmt"
-	"log"
-	"net/http"
-	"app"
-)
-
-func main() {
-	fmt.Println("🚀 Servidor iniciado en http://localhost:8081")
-
-	mux := http.NewServeMux()
-	app.SetupRoutes(mux)
-
-	err := http.ListenAndServe(":8081", mux)
-	if err != nil {
-		log.Fatal("❌ Error al iniciar el servidor:", err)
-	}
-}
-`
+    import (
+        "fmt"
+        "log"
+        "net/http"
+    )
+    
+    func main() {
+        fmt.Println("🚀 Servidor iniciado en http://localhost:8081")
+    
+        mux := http.NewServeMux()
+        SetupRoutes(mux)
+    
+        err := http.ListenAndServe(":8081", mux)
+        if err != nil {
+            log.Fatal("❌ Error al iniciar el servidor:", err)
+        }
+    }
+    `
 
 	// Crear app/routes.go vacío con SetupRoutes
-	routesContent := `package app
+	routesContent := `package main
 
-import "net/http"
+    import "net/http"
+    
+    func SetupRoutes(mux *http.ServeMux) {
+        // Aquí se registrarán las rutas automáticamente 🚀
+    }
+    `
 
-func SetupRoutes(mux *http.ServeMux) {
-	// Aquí se registrarán las rutas automáticamente 🚀
-}
-`
 	os.WriteFile(filepath.Join("app", "routes.go"), []byte(routesContent), 0644)
 
 	os.Mkdir("app", 0755)
