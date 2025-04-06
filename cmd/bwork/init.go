@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 )
 
@@ -21,12 +22,16 @@ func runInit() {
 	os.WriteFile(".env", []byte("DB_HOST=localhost\nDB_PORT=3306\nDB_USER=root\nDB_PASSWORD=password\nDB_NAME=bworkdb\n"), 0644)
 	os.WriteFile(".gitignore", []byte(".env\n.bwork_modules/\n*.log\n*.tmp\n*.out\n"), 0644)
 
-	// Crear go.mod
-	moduleContent := `module app
-
-go 1.20
-`
-	os.WriteFile("go.mod", []byte(moduleContent), 0644)
+	// Ejecutar: go mod init app
+	cmd := exec.Command("go", "mod", "init", "app")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println("❌ Error al crear go.mod:", err)
+	} else {
+		fmt.Println("📦 Módulo Go inicializado como 'app'")
+	}
 
 	// main.go con servidor funcional
 	mainContent := `package main
