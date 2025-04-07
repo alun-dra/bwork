@@ -89,19 +89,19 @@ func %s(w http.ResponseWriter, r *http.Request) {
 func registerRoute(path, handler string) {
 	routesFile := "app/routes.go"
 
-	// Detectar nombre del módulo desde go.mod
+	// Leer módulo desde go.mod
 	moduleName := "app"
 	if data, err := os.ReadFile("go.mod"); err == nil {
 		lines := strings.Split(string(data), "\n")
 		for _, line := range lines {
 			if strings.HasPrefix(line, "module ") {
-				moduleName = strings.TrimSpace(strings.TrimPrefix(line, "module"))
+				moduleName = strings.TrimSpace(strings.TrimPrefix(line, "module "))
 				break
 			}
 		}
 	}
 
-	viewImport := fmt.Sprintf("\"%s/views\"", moduleName)
+	viewImport := fmt.Sprintf("\t\"%s/views\"", moduleName)
 
 	// Crear routes.go si no existe
 	if _, err := os.Stat(routesFile); os.IsNotExist(err) {
@@ -120,56 +120,38 @@ func SetupRoutes(mux *http.ServeMux) {
 		return
 	}
 
-	// Leer contenido actual
+	// Leer archivo existente
 	data, _ := os.ReadFile(routesFile)
 	lines := strings.Split(string(data), "\n")
 
-	// 1. Convertir import simple a bloque si es necesario
-	for i, line := range lines {
-		if strings.HasPrefix(line, "import ") && strings.Contains(line, "\"") && !strings.Contains(line, "(") {
-			// Extraer import
-			importPath := strings.TrimSpace(strings.TrimPrefix(line, "import"))
-			importPath = strings.Trim(importPath, `"`)
-			lines[i] = "import ("
-			lines = append(lines[:i+1], append([]string{fmt.Sprintf("\t\"%s\"", importPath)}, lines[i+1:]...)...)
-			// Insertar cierre del bloque
-			for j := i + 2; j < len(lines); j++ {
-				if strings.HasPrefix(lines[j], "func ") {
-					lines = append(lines[:j], append([]string{")"}, lines[j:]...)...)
-					break
-				}
-			}
+	// Agregar import si no está
+	importExists := false
+	for _, line := range lines {
+		if strings.Contains(line, "/views\"") {
+			importExists = true
 			break
 		}
 	}
 
-	// 2. Insertar import si no existe
-	hasImport := false
-	for _, line := range lines {
-		if strings.Contains(line, viewImport) {
-			hasImport = true
-			break
-		}
-	}
-	if !hasImport {
+	if !importExists {
 		for i, line := range lines {
-			if line == "import (" {
-				lines = append(lines[:i+1], append([]string{"\t" + viewImport}, lines[i+1:]...)...)
+			if strings.TrimSpace(line) == "import (" {
+				lines = append(lines[:i+1], append([]string{viewImport}, lines[i+1:]...)...)
 				break
 			}
 		}
 	}
 
-	// 3. Insertar ruta si no existe
+	// Insertar ruta si no existe
 	routeLine := fmt.Sprintf("\tmux.HandleFunc(\"/%s\", views.%s)", path, handler)
-	hasRoute := false
+	routeExists := false
 	for _, line := range lines {
 		if strings.Contains(line, routeLine) {
-			hasRoute = true
+			routeExists = true
 			break
 		}
 	}
-	if !hasRoute {
+	if !routeExists {
 		for i, line := range lines {
 			if strings.Contains(line, "SetupRoutes") && strings.Contains(line, "{") {
 				lines = append(lines[:i+1], append([]string{routeLine}, lines[i+1:]...)...)
@@ -178,7 +160,7 @@ func SetupRoutes(mux *http.ServeMux) {
 		}
 	}
 
-	// Escribir de nuevo el archivo
+	// Guardar archivo
 	output := strings.Join(lines, "\n")
 	os.WriteFile(routesFile, []byte(output), 0644)
 
