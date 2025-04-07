@@ -147,7 +147,9 @@ func SetupRoutes(mux *http.ServeMux) {
 }
 
 func copyRouterModule() {
-	src := filepath.Join("internal", "router", "router.go")
+	execPath, _ := os.Executable()
+	baseDir := filepath.Dir(execPath)
+	src := filepath.Join(baseDir, "internal", "router", "router.go")
 	destDir := filepath.Join(".bwork_modules", "router")
 	dest := filepath.Join(destDir, "router.go")
 
