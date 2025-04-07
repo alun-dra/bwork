@@ -1,13 +1,14 @@
 package main
 
 import (
+	_ "embed"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 )
+
+var routerSource []byte
 
 func runInit() {
 	fmt.Println("Inicializando proyecto BWORK...")
@@ -148,11 +149,6 @@ func SetupRoutes(mux *http.ServeMux) {
 }
 
 func copyRouterModule() {
-	// Obtener la ruta base del archivo fuente del CLI
-	_, currentFile, _, _ := runtime.Caller(0)
-	basePath := filepath.Dir(currentFile)
-	src := filepath.Join(basePath, "..", "..", "internal", "router", "router.go")
-
 	destDir := filepath.Join(".bwork_modules", "router")
 	dest := filepath.Join(destDir, "router.go")
 
@@ -162,24 +158,9 @@ func copyRouterModule() {
 		return
 	}
 
-	in, err := os.Open(src)
+	err = os.WriteFile(dest, routerSource, 0644)
 	if err != nil {
-		fmt.Println("❌ No se pudo abrir el archivo router de origen:", err)
-		fmt.Println("Ruta esperada:", src)
-		return
-	}
-	defer in.Close()
-
-	out, err := os.Create(dest)
-	if err != nil {
-		fmt.Println("❌ No se pudo crear el archivo router de destino:", err)
-		return
-	}
-	defer out.Close()
-
-	_, err = io.Copy(out, in)
-	if err != nil {
-		fmt.Println("❌ Error al copiar el módulo router:", err)
+		fmt.Println("❌ Error al escribir el archivo router.go:", err)
 		return
 	}
 
