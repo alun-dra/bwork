@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -47,43 +48,43 @@ func runInit() {
 	// Crear app/main.go
 	mainContent := `package main
 
-    import (
-        "fmt"
-        "log"
-        "net/http"
-    )
-    
-    func main() {
-        fmt.Println("🚀 Servidor iniciado en http://localhost:8081")
-    
-        mux := http.NewServeMux()
-        SetupRoutes(mux)
-    
-        err := http.ListenAndServe(":8081", mux)
-        if err != nil {
-            log.Fatal("❌ Error al iniciar el servidor:", err)
-        }
-    }
-    `
+import (
+	"fmt"
+	"log"
+	"net/http"
+)
 
-	// Crear app/routes.go vacío con SetupRoutes
+func main() {
+	fmt.Println("🚀 Servidor iniciado en http://localhost:8081")
+
+	mux := http.NewServeMux()
+	SetupRoutes(mux)
+
+	err := http.ListenAndServe(":8081", mux)
+	if err != nil {
+		log.Fatal("❌ Error al iniciar el servidor:", err)
+	}
+}`
+
+	// Crear app/routes.go
 	routesContent := `package main
 
-	import (
-		"net/http"
-	)
+import (
+	"net/http"
+)
 
-	func SetupRoutes(mux *http.ServeMux) {
-		// Aquí se registrarán las rutas automáticamente 🚀
-	}
-	`
-
-	os.WriteFile(filepath.Join("app", "routes.go"), []byte(routesContent), 0644)
+func SetupRoutes(mux *http.ServeMux) {
+	// Aquí se registrarán las rutas automáticamente 🚀
+}`
 
 	os.Mkdir("app", 0755)
 	os.WriteFile(filepath.Join("app", "main.go"), []byte(mainContent), 0644)
+	os.WriteFile(filepath.Join("app", "routes.go"), []byte(routesContent), 0644)
 
-	// Crear README.md (sin caracteres escapados)
+	// Copiar módulo router a .bwork_modules/router
+	copyRouterModule()
+
+	// Crear README.md
 	readmeContent := "# 🚀 Proyecto creado con BWORK\n\n" +
 		"Este backend fue generado con [BWORK](https://github.com/alun-dra/bwork), un framework CLI para construir APIs Go de forma rápida y modular.\n\n" +
 		"---\n\n" +
@@ -140,8 +141,41 @@ func runInit() {
 		"Este proyecto fue generado con 💡 usando [BWORK CLI](https://github.com/alun-dra/bwork).\n" +
 		"Si quieres colaborar o sugerir mejoras, ¡haz un PR o crea un issue!\n"
 
-		// Guardar README.md
 	os.WriteFile("README.md", []byte(readmeContent), 0644)
 
 	fmt.Println("✅ Proyecto BWORK inicializado con éxito.")
+}
+
+func copyRouterModule() {
+	src := filepath.Join("internal", "router", "router.go")
+	destDir := filepath.Join(".bwork_modules", "router")
+	dest := filepath.Join(destDir, "router.go")
+
+	err := os.MkdirAll(destDir, 0755)
+	if err != nil {
+		fmt.Println("❌ No se pudo crear el directorio del módulo router:", err)
+		return
+	}
+
+	in, err := os.Open(src)
+	if err != nil {
+		fmt.Println("❌ No se pudo abrir el archivo router de origen:", err)
+		return
+	}
+	defer in.Close()
+
+	out, err := os.Create(dest)
+	if err != nil {
+		fmt.Println("❌ No se pudo crear el archivo router de destino:", err)
+		return
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	if err != nil {
+		fmt.Println("❌ Error al copiar el módulo router:", err)
+		return
+	}
+
+	fmt.Println("📦 Módulo 'router' copiado en .bwork_modules/router ✅")
 }
