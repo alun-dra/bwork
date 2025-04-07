@@ -89,21 +89,26 @@ func %s(w http.ResponseWriter, r *http.Request) {
 func registerRoute(path, handler string) {
 	routesFile := "app/routes.go"
 
-	// Leer módulo desde go.mod
+	// Detectar el nombre del módulo desde go.mod
 	moduleName := "app"
 	if data, err := os.ReadFile("go.mod"); err == nil {
 		lines := strings.Split(string(data), "\n")
 		for _, line := range lines {
 			if strings.HasPrefix(line, "module ") {
-				moduleName = strings.TrimSpace(strings.TrimPrefix(line, "module "))
+				moduleName = strings.TrimSpace(strings.TrimPrefix(line, "module"))
 				break
 			}
 		}
 	}
 
-	viewImport := fmt.Sprintf("\t\"%s/views\"", moduleName)
+	// Detectar si views está en ruta relativa o absoluta para ajustar import
+	viewImport := fmt.Sprintf("\"%s/views\"", moduleName)
+	if _, err := os.Stat("app/views"); err == nil && moduleName == "app" {
+		// Significa que estamos dentro de carpeta /app en estructura
+		viewImport = "\"app/app/views\""
+	}
 
-	// Crear routes.go si no existe
+	// Si no existe routes.go, crearlo
 	if _, err := os.Stat(routesFile); os.IsNotExist(err) {
 		base := fmt.Sprintf(`package main
 
@@ -120,38 +125,37 @@ func SetupRoutes(mux *http.ServeMux) {
 		return
 	}
 
-	// Leer archivo existente
+	// Leer el archivo
 	data, _ := os.ReadFile(routesFile)
 	lines := strings.Split(string(data), "\n")
 
-	// Agregar import si no está
-	importExists := false
+	// Agregar el import si no está
+	hasImport := false
 	for _, line := range lines {
-		if strings.Contains(line, "/views\"") {
-			importExists = true
+		if strings.Contains(line, viewImport) {
+			hasImport = true
 			break
 		}
 	}
-
-	if !importExists {
+	if !hasImport {
 		for i, line := range lines {
-			if strings.TrimSpace(line) == "import (" {
+			if strings.Contains(line, "import (") {
 				lines = append(lines[:i+1], append([]string{viewImport}, lines[i+1:]...)...)
 				break
 			}
 		}
 	}
 
-	// Insertar ruta si no existe
+	// Agregar la ruta si no está
 	routeLine := fmt.Sprintf("\tmux.HandleFunc(\"/%s\", views.%s)", path, handler)
-	routeExists := false
+	hasRoute := false
 	for _, line := range lines {
 		if strings.Contains(line, routeLine) {
-			routeExists = true
+			hasRoute = true
 			break
 		}
 	}
-	if !routeExists {
+	if !hasRoute {
 		for i, line := range lines {
 			if strings.Contains(line, "SetupRoutes") && strings.Contains(line, "{") {
 				lines = append(lines[:i+1], append([]string{routeLine}, lines[i+1:]...)...)
@@ -160,7 +164,7 @@ func SetupRoutes(mux *http.ServeMux) {
 		}
 	}
 
-	// Guardar archivo
+	// Guardar archivo actualizado
 	output := strings.Join(lines, "\n")
 	os.WriteFile(routesFile, []byte(output), 0644)
 
