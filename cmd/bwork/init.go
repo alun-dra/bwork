@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 )
 
 func runInit() {
@@ -147,37 +148,28 @@ func SetupRoutes(mux *http.ServeMux) {
 }
 
 func copyRouterModule() {
-	// Obtener la ruta del ejecutable actual
-	execPath, err := os.Executable()
-	if err != nil {
-		fmt.Println("❌ No se pudo obtener la ruta del ejecutable:", err)
-		return
-	}
+	// Obtener la ruta base del archivo fuente del CLI
+	_, currentFile, _, _ := runtime.Caller(0)
+	basePath := filepath.Dir(currentFile)
+	src := filepath.Join(basePath, "..", "..", "internal", "router", "router.go")
 
-	// Ruta base del ejecutable (donde están los archivos adjuntos como internal/router)
-	baseDir := filepath.Dir(execPath)
-
-	// Construir ruta absoluta del archivo fuente router.go
-	src := filepath.Join(baseDir, "internal", "router", "router.go")
 	destDir := filepath.Join(".bwork_modules", "router")
 	dest := filepath.Join(destDir, "router.go")
 
-	// Crear carpeta destino
-	err = os.MkdirAll(destDir, 0755)
+	err := os.MkdirAll(destDir, 0755)
 	if err != nil {
 		fmt.Println("❌ No se pudo crear el directorio del módulo router:", err)
 		return
 	}
 
-	// Abrir archivo fuente
 	in, err := os.Open(src)
 	if err != nil {
 		fmt.Println("❌ No se pudo abrir el archivo router de origen:", err)
+		fmt.Println("Ruta esperada:", src)
 		return
 	}
 	defer in.Close()
 
-	// Crear archivo de destino
 	out, err := os.Create(dest)
 	if err != nil {
 		fmt.Println("❌ No se pudo crear el archivo router de destino:", err)
@@ -185,7 +177,6 @@ func copyRouterModule() {
 	}
 	defer out.Close()
 
-	// Copiar contenido
 	_, err = io.Copy(out, in)
 	if err != nil {
 		fmt.Println("❌ Error al copiar el módulo router:", err)
