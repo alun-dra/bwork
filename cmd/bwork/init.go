@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 )
 
+//go:embed internal/router/router.go
 var routerSource []byte
 
 func runInit() {
