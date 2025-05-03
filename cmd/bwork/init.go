@@ -15,7 +15,7 @@ func runInit() {
 	fmt.Println("Inicializando proyecto BWORK...")
 
 	// Crear estructura de carpetas
-	os.Mkdir(".bwork_modules", 0755)
+	os.Mkdir("bwork_modules", 0755)
 	os.MkdirAll("app/controllers", 0755)
 	os.MkdirAll("app/models", 0755)
 	os.MkdirAll("app/views", 0755)
@@ -24,7 +24,7 @@ func runInit() {
 	// Archivos de configuración
 	os.WriteFile("bwork.json", []byte("{\n  \"name\": \"mi-backend\",\n  \"version\": \"0.0.1\"\n}"), 0644)
 	os.WriteFile(".env", []byte("DB_HOST=localhost\nDB_PORT=3306\nDB_USER=root\nDB_PASSWORD=password\nDB_NAME=bworkdb\n"), 0644)
-	os.WriteFile(".gitignore", []byte(".env\n.bwork_modules/\n*.log\n*.tmp\n*.out\n"), 0644)
+	os.WriteFile(".gitignore", []byte(".env\nbwork_modules/\n*.log\n*.tmp\n*.out\n"), 0644)
 
 	// Ejecutar: go mod init app
 	cmd := exec.Command("go", "mod", "init", "app")
@@ -84,7 +84,7 @@ func SetupRoutes(mux *http.ServeMux) {
 	os.WriteFile(filepath.Join("app", "main.go"), []byte(mainContent), 0644)
 	os.WriteFile(filepath.Join("app", "routes.go"), []byte(routesContent), 0644)
 
-	// Copiar módulo router a .bwork_modules/router
+	// Copiar módulo router a bwork_modules/router
 	copyRouterModule()
 
 	// Crear README.md
@@ -150,7 +150,7 @@ func SetupRoutes(mux *http.ServeMux) {
 }
 
 func copyRouterModule() {
-	destDir := filepath.Join(".bwork_modules", "router")
+	destDir := filepath.Join("bwork_modules", "router")
 	dest := filepath.Join(destDir, "router.go")
 
 	err := os.MkdirAll(destDir, 0755)
@@ -165,5 +165,5 @@ func copyRouterModule() {
 		return
 	}
 
-	fmt.Println("📦 Módulo 'router' copiado en .bwork_modules/router ✅")
+	fmt.Println("📦 Módulo 'router' copiado en bwork_modules/router ✅")
 }

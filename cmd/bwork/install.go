@@ -44,7 +44,7 @@ func Connect() {
 		return
 	}
 
-	dir := filepath.Join(".bwork_modules", lib)
+	dir := filepath.Join("bwork_modules", lib)
 	os.MkdirAll(dir, 0755)
 
 	file := filepath.Join(dir, lib+".go")
