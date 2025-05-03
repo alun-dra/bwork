@@ -159,11 +159,29 @@ func copyRouterModule() {
 		return
 	}
 
-	err = os.WriteFile(dest, routerSource, 0644)
+	// Archivos fuente del router
+	files := []string{
+		"internal/router/core.go",
+		"internal/router/middleware.go",
+		"internal/router/utils.go",
+		"internal/router/router.go", // este archivo debe tener solo ApplyRoutes
+	}
+
+	var fullRouterCode []byte
+	for _, file := range files {
+		content, err := os.ReadFile(file)
+		if err != nil {
+			fmt.Printf("❌ Error leyendo %s: %v\n", file, err)
+			return
+		}
+		fullRouterCode = append(fullRouterCode, append(content, []byte("\n\n")...)...)
+	}
+
+	err = os.WriteFile(dest, fullRouterCode, 0644)
 	if err != nil {
-		fmt.Println("❌ Error al escribir el archivo router.go:", err)
+		fmt.Println("❌ Error al escribir el archivo router.go combinado:", err)
 		return
 	}
 
-	fmt.Println("📦 Módulo 'router' copiado en bwork_modules/router ✅")
+	fmt.Println("📦 Módulo 'router' copiado y ensamblado en .bwork_modules/router ✅")
 }
