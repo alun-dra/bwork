@@ -50,6 +50,14 @@ func runInit() {
 		fmt.Println("📦 Módulo Go inicializado como 'app'")
 	}
 
+	replaceCmd := exec.Command("go", "mod", "edit", "-replace", "app/bwork_modules/router=./app/bwork_modules/router")
+	replaceCmd.Stdout = os.Stdout
+	replaceCmd.Stderr = os.Stderr
+	err = replaceCmd.Run()
+	if err != nil {
+		fmt.Println("❌ Error al establecer el replace en go.mod:", err)
+	}
+
 	// Ejecutar: go mod tidy
 	tidyCmd := exec.Command("go", "mod", "tidy")
 	tidyCmd.Stdout = os.Stdout
