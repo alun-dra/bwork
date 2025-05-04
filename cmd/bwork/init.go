@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 //go:embed internal/router/router.go
@@ -98,7 +99,7 @@ func SetupRoutes(mux *http.ServeMux) {
 
 	// Copiar módulo router a bwork_modules/router
 	copyRouterModule()
-
+	createRouterGoMod()
 	// Crear README.md
 	readmeContent := "# 🚀 Proyecto creado con BWORK\n\n" +
 		"Este backend fue generado con [BWORK](https://github.com/alun-dra/bwork), un framework CLI para construir APIs Go de forma rápida y modular.\n\n" +
@@ -190,4 +191,45 @@ func copyRouterModule() {
 	}
 
 	fmt.Println("📦 Módulo 'router' copiado por separado en bwork_modules/router ✅")
+}
+
+func createRouterGoMod() {
+	// Leer la versión de Go del archivo raíz
+	rootModPath := "go.mod"
+	content, err := os.ReadFile(rootModPath)
+	if err != nil {
+		fmt.Println("❌ No se pudo leer la versión de Go desde go.mod:", err)
+		return
+	}
+
+	var goVersion string = "1.20" // fallback
+	lines := strings.Split(string(content), "\n")
+	for _, line := range lines {
+		if strings.HasPrefix(line, "go ") {
+			goVersion = strings.TrimSpace(strings.TrimPrefix(line, "go"))
+			break
+		}
+	}
+
+	modContent := fmt.Sprintf("module app/bwork_modules/router\n\ngo %s\n", goVersion)
+	goModPath := filepath.Join("app", "bwork_modules", "router", "go.mod")
+
+	err = os.WriteFile(goModPath, []byte(modContent), 0644)
+	if err != nil {
+		fmt.Println("❌ No se pudo crear go.mod del submódulo router:", err)
+		return
+	}
+
+	// Ejecutar go mod tidy dentro del submódulo
+	cmd := exec.Command("go", "mod", "tidy")
+	cmd.Dir = filepath.Join("app", "bwork_modules", "router")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		fmt.Println("❌ Error al ejecutar 'go mod tidy' en el submódulo router:", err)
+		return
+	}
+
+	fmt.Println("📦 go.mod creado para submódulo router con tidy ✅")
 }
