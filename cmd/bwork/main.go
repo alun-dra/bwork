@@ -13,7 +13,11 @@ func main() {
 
 	switch os.Args[1] {
 	case "init":
-		runInit()
+		moduleName := "app"
+		if len(os.Args) >= 3 {
+			moduleName = os.Args[2]
+		}
+		runInit(moduleName)
 	case "install":
 		if len(os.Args) < 3 {
 			fmt.Println("Uso: bwork install <lib>")
