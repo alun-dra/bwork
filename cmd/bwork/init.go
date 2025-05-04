@@ -102,6 +102,7 @@ func SetupRoutes(mux *http.ServeMux) {
 	createRouterGoMod()
 	addReplaceDirective()
 	addRequireDirective()
+	addRouterRequireDirective()
 
 	// Crear README.md
 	readmeContent := "# 🚀 Proyecto creado con BWORK\n\n" +
@@ -274,5 +275,25 @@ func addRequireDirective() {
 			return
 		}
 		fmt.Println("📦 Línea 'require' añadida a go.mod raíz ✅")
+	}
+}
+func addRouterRequireDirective() {
+	rootGoMod := "go.mod"
+	requireLine := "\nrequire app/bwork_modules/router v0.0.0\n"
+
+	content, err := os.ReadFile(rootGoMod)
+	if err != nil {
+		fmt.Println("❌ No se pudo leer go.mod raíz para añadir require:", err)
+		return
+	}
+
+	if !strings.Contains(string(content), "require app/bwork_modules/router") {
+		newContent := string(content) + requireLine
+		err = os.WriteFile(rootGoMod, []byte(newContent), 0644)
+		if err != nil {
+			fmt.Println("❌ No se pudo escribir la línea require:", err)
+			return
+		}
+		fmt.Println("📥 Línea 'require' añadida a go.mod raíz ✅")
 	}
 }
