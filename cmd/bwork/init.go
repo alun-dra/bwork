@@ -108,6 +108,7 @@ func SetupRoutes(mux *http.ServeMux) {
 	// Copiar módulo router a bwork_modules/router
 	copyRouterModule()
 	createRouterGoMod()
+	addReplaceDirective()
 	// Crear README.md
 	readmeContent := "# 🚀 Proyecto creado con BWORK\n\n" +
 		"Este backend fue generado con [BWORK](https://github.com/alun-dra/bwork), un framework CLI para construir APIs Go de forma rápida y modular.\n\n" +
@@ -240,4 +241,26 @@ func createRouterGoMod() {
 	}
 
 	fmt.Println("📦 go.mod creado para submódulo router con tidy ✅")
+}
+
+func addReplaceDirective() {
+	rootGoMod := "go.mod"
+	replaceLine := "\nreplace app/bwork_modules/router => ./app/bwork_modules/router\n"
+
+	content, err := os.ReadFile(rootGoMod)
+	if err != nil {
+		fmt.Println("❌ No se pudo leer go.mod raíz para añadir replace:", err)
+		return
+	}
+
+	// Solo lo agregamos si no existe
+	if !strings.Contains(string(content), "replace app/bwork_modules/router") {
+		newContent := string(content) + replaceLine
+		err = os.WriteFile(rootGoMod, []byte(newContent), 0644)
+		if err != nil {
+			fmt.Println("❌ No se pudo escribir en go.mod raíz:", err)
+			return
+		}
+		fmt.Println("🔁 Línea 'replace' añadida a go.mod raíz ✅")
+	}
 }
