@@ -50,14 +50,6 @@ func runInit() {
 		fmt.Println("📦 Módulo Go inicializado como 'app'")
 	}
 
-	replaceCmd := exec.Command("go", "mod", "edit", "-replace", "app/bwork_modules/router=./app/bwork_modules/router")
-	replaceCmd.Stdout = os.Stdout
-	replaceCmd.Stderr = os.Stderr
-	err = replaceCmd.Run()
-	if err != nil {
-		fmt.Println("❌ Error al establecer el replace en go.mod:", err)
-	}
-
 	// Ejecutar: go mod tidy
 	tidyCmd := exec.Command("go", "mod", "tidy")
 	tidyCmd.Stdout = os.Stdout
@@ -109,6 +101,8 @@ func SetupRoutes(mux *http.ServeMux) {
 	copyRouterModule()
 	createRouterGoMod()
 	addReplaceDirective()
+	addRequireDirective()
+
 	// Crear README.md
 	readmeContent := "# 🚀 Proyecto creado con BWORK\n\n" +
 		"Este backend fue generado con [BWORK](https://github.com/alun-dra/bwork), un framework CLI para construir APIs Go de forma rápida y modular.\n\n" +
@@ -203,19 +197,18 @@ func copyRouterModule() {
 }
 
 func createRouterGoMod() {
-	// Leer la versión de Go del archivo raíz
 	rootModPath := "go.mod"
 	content, err := os.ReadFile(rootModPath)
 	if err != nil {
-		fmt.Println("❌ No se pudo leer la versión de Go desde go.mod:", err)
+		fmt.Println("❌ No se pudo leer la versión de Go desde go.mod raíz:", err)
 		return
 	}
 
-	var goVersion string = "1.20" // fallback
+	var goVersion = "1.20"
 	lines := strings.Split(string(content), "\n")
 	for _, line := range lines {
 		if strings.HasPrefix(line, "go ") {
-			goVersion = strings.TrimSpace(strings.TrimPrefix(line, "go"))
+			goVersion = strings.TrimSpace(strings.TrimPrefix(line, "go "))
 			break
 		}
 	}
@@ -229,14 +222,13 @@ func createRouterGoMod() {
 		return
 	}
 
-	// Ejecutar go mod tidy dentro del submódulo
 	cmd := exec.Command("go", "mod", "tidy")
 	cmd.Dir = filepath.Join("app", "bwork_modules", "router")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	if err != nil {
-		fmt.Println("❌ Error al ejecutar 'go mod tidy' en el submódulo router:", err)
+		fmt.Println("❌ Error al ejecutar 'go mod tidy' en submódulo router:", err)
 		return
 	}
 
@@ -253,7 +245,6 @@ func addReplaceDirective() {
 		return
 	}
 
-	// Solo lo agregamos si no existe
 	if !strings.Contains(string(content), "replace app/bwork_modules/router") {
 		newContent := string(content) + replaceLine
 		err = os.WriteFile(rootGoMod, []byte(newContent), 0644)
@@ -262,5 +253,26 @@ func addReplaceDirective() {
 			return
 		}
 		fmt.Println("🔁 Línea 'replace' añadida a go.mod raíz ✅")
+	}
+}
+
+func addRequireDirective() {
+	rootGoMod := "go.mod"
+	requireLine := "\nrequire app/bwork_modules/router v0.0.0-00010101000000-000000000000\n"
+
+	content, err := os.ReadFile(rootGoMod)
+	if err != nil {
+		fmt.Println("❌ No se pudo leer go.mod raíz para añadir require:", err)
+		return
+	}
+
+	if !strings.Contains(string(content), "require app/bwork_modules/router") {
+		newContent := string(content) + requireLine
+		err = os.WriteFile(rootGoMod, []byte(newContent), 0644)
+		if err != nil {
+			fmt.Println("❌ No se pudo escribir en go.mod raíz para añadir require:", err)
+			return
+		}
+		fmt.Println("📦 Línea 'require' añadida a go.mod raíz ✅")
 	}
 }
