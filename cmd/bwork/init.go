@@ -163,7 +163,6 @@ func SetupRoutes(mux *http.ServeMux) {
 
 func copyRouterModule() {
 	destDir := filepath.Join("bwork_modules", "router")
-	dest := filepath.Join(destDir, "router.go")
 
 	err := os.MkdirAll(destDir, 0755)
 	if err != nil {
@@ -171,24 +170,24 @@ func copyRouterModule() {
 		return
 	}
 
-	// Archivos embebidos en orden
-	sources := [][]byte{
-		coreSource,
-		middlewareSource,
-		utilsSource,
-		routerMainSource, // este contiene ApplyRoutes
+	files := []struct {
+		Name    string
+		Content []byte
+	}{
+		{"core.go", coreSource},
+		{"middleware.go", middlewareSource},
+		{"utils.go", utilsSource},
+		{"router.go", routerMainSource},
 	}
 
-	var fullRouterCode []byte
-	for _, content := range sources {
-		fullRouterCode = append(fullRouterCode, append(content, []byte("\n\n")...)...)
+	for _, file := range files {
+		destPath := filepath.Join(destDir, file.Name)
+		err := os.WriteFile(destPath, file.Content, 0644)
+		if err != nil {
+			fmt.Printf("❌ Error al escribir %s: %v\n", file.Name, err)
+			return
+		}
 	}
 
-	err = os.WriteFile(dest, fullRouterCode, 0644)
-	if err != nil {
-		fmt.Println("❌ Error al escribir el archivo router.go combinado:", err)
-		return
-	}
-
-	fmt.Println("📦 Módulo 'router' copiado y ensamblado en bwork_modules/router ✅")
+	fmt.Println("📦 Módulo 'router' copiado por separado en bwork_modules/router ✅")
 }
