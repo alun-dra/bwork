@@ -27,7 +27,7 @@ func runInit() {
 	fmt.Println("Inicializando proyecto BWORK...")
 
 	// Crear estructura de carpetas
-	os.Mkdir("bwork_modules", 0755)
+	os.MkdirAll("app/bwork_modules/router", 0755)
 	os.MkdirAll("app/controllers", 0755)
 	os.MkdirAll("app/models", 0755)
 	os.MkdirAll("app/views", 0755)
@@ -162,7 +162,7 @@ func SetupRoutes(mux *http.ServeMux) {
 }
 
 func copyRouterModule() {
-	destDir := filepath.Join("bwork_modules", "router")
+	destDir := filepath.Join("app", "bwork_modules", "router")
 
 	err := os.MkdirAll(destDir, 0755)
 	if err != nil {
