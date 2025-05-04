@@ -11,6 +11,18 @@ import (
 //go:embed internal/router/router.go
 var routerSource []byte
 
+//go:embed internal/router/core.go
+var coreSource []byte
+
+//go:embed internal/router/middleware.go
+var middlewareSource []byte
+
+//go:embed internal/router/utils.go
+var utilsSource []byte
+
+//go:embed internal/router/router.go
+var routerMainSource []byte
+
 func runInit() {
 	fmt.Println("Inicializando proyecto BWORK...")
 
@@ -159,21 +171,16 @@ func copyRouterModule() {
 		return
 	}
 
-	// Archivos fuente del router
-	files := []string{
-		"internal/router/core.go",
-		"internal/router/middleware.go",
-		"internal/router/utils.go",
-		"internal/router/router.go", // este archivo debe tener solo ApplyRoutes
+	// Archivos embebidos en orden
+	sources := [][]byte{
+		coreSource,
+		middlewareSource,
+		utilsSource,
+		routerMainSource, // este contiene ApplyRoutes
 	}
 
 	var fullRouterCode []byte
-	for _, file := range files {
-		content, err := os.ReadFile(file)
-		if err != nil {
-			fmt.Printf("❌ Error leyendo %s: %v\n", file, err)
-			return
-		}
+	for _, content := range sources {
 		fullRouterCode = append(fullRouterCode, append(content, []byte("\n\n")...)...)
 	}
 
@@ -183,5 +190,5 @@ func copyRouterModule() {
 		return
 	}
 
-	fmt.Println("📦 Módulo 'router' copiado y ensamblado en .bwork_modules/router ✅")
+	fmt.Println("📦 Módulo 'router' copiado y ensamblado en bwork_modules/router ✅")
 }
