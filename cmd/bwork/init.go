@@ -28,11 +28,11 @@ func runInit(moduleName string) {
 	fmt.Println("Inicializando proyecto BWORK...")
 
 	// Crear estructura de carpetas
-	os.MkdirAll("app/bwork_modules/router", 0755)
-	os.MkdirAll("app/controllers", 0755)
-	os.MkdirAll("app/models", 0755)
-	os.MkdirAll("app/views", 0755)
-	os.MkdirAll("app/config", 0755)
+	os.MkdirAll(filepath.Join(moduleName, "bwork_modules", "router"), 0755)
+	os.MkdirAll(filepath.Join(moduleName, "controllers"), 0755)
+	os.MkdirAll(filepath.Join(moduleName, "models"), 0755)
+	os.MkdirAll(filepath.Join(moduleName, "views"), 0755)
+	os.MkdirAll(filepath.Join(moduleName, "config"), 0755)
 
 	// Archivos de configuración
 	os.WriteFile("bwork.json", []byte("{\n  \"name\": \"mi-backend\",\n  \"version\": \"0.0.1\"\n}"), 0644)
