@@ -94,9 +94,9 @@ func SetupRoutes(mux *http.ServeMux) {
 	// Aquí se registrarán las rutas automáticamente 🚀
 }`
 
-	os.Mkdir("app", 0755)
-	os.WriteFile(filepath.Join("app", "main.go"), []byte(mainContent), 0644)
-	os.WriteFile(filepath.Join("app", "routes.go"), []byte(routesContent), 0644)
+	os.Mkdir(moduleName, 0755)
+	os.WriteFile(filepath.Join(moduleName, "main.go"), []byte(mainContent), 0644)
+	os.WriteFile(filepath.Join(moduleName, "routes.go"), []byte(routesContent), 0644)
 
 	// Copiar módulo router a bwork_modules/router
 	copyRouterModule(moduleName)
