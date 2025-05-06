@@ -7,24 +7,24 @@ import (
 	"strings"
 )
 
-func runGenerate(entityType, name string) {
+func runGenerate(entityType, name, moduleName string) {
 	switch entityType {
 	case "controller":
-		generateController(name)
+		generateController(name, moduleName)
 	case "model":
-		generateModel(name)
+		generateModel(name, moduleName)
 	case "view":
-		generateView(name)
+		generateView(name, moduleName)
 	case "module":
-		generateModel(name)
-		generateController(name)
-		generateView(name)
+		generateModel(name, moduleName)
+		generateController(name, moduleName)
+		generateView(name, moduleName)
 	default:
 		fmt.Printf("Tipo '%s' no soportado para generar\n", entityType)
 	}
 }
 
-func generateController(name string) {
+func generateController(name, moduleName string) {
 	formattedName := strings.ToLower(name)
 	structName := strings.Title(formattedName)
 
@@ -35,14 +35,14 @@ func %sControllerLogic() string {
 }
 `, structName, structName)
 
-	dir := "app/controllers"
+	dir := filepath.Join(moduleName, "controllers")
 	os.MkdirAll(dir, 0755)
 	fileName := filepath.Join(dir, formattedName+"_controller.go")
 	os.WriteFile(fileName, []byte(content), 0644)
 	fmt.Printf("Controlador '%s' generado ✅\n", fileName)
 }
 
-func generateModel(name string) {
+func generateModel(name, moduleName string) {
 	formattedName := strings.ToLower(name)
 	structName := strings.Title(formattedName)
 
@@ -54,14 +54,14 @@ type %s struct {
 }
 `, structName)
 
-	dir := "app/models"
+	dir := filepath.Join(moduleName, "models")
 	os.MkdirAll(dir, 0755)
 	fileName := filepath.Join(dir, formattedName+".go")
 	os.WriteFile(fileName, []byte(content), 0644)
 	fmt.Printf("Modelo '%s' generado ✅\n", fileName)
 }
 
-func generateView(name string) {
+func generateView(name, moduleName string) {
 	formattedName := strings.ToLower(name)
 	handlerName := strings.Title(formattedName) + "View"
 
@@ -77,38 +77,21 @@ func %s(w http.ResponseWriter, r *http.Request) {
 }
 `, handlerName, formattedName)
 
-	dir := "app/views"
+	dir := filepath.Join(moduleName, "views")
 	os.MkdirAll(dir, 0755)
 	fileName := filepath.Join(dir, formattedName+"_view.go")
 	os.WriteFile(fileName, []byte(content), 0644)
 	fmt.Printf("Vista '%s' generada ✅\n", fileName)
 
-	registerRoute(formattedName, handlerName)
+	registerRoute(formattedName, handlerName, moduleName)
 }
 
-func registerRoute(path, handler string) {
-	routesFile := "app/routes.go"
+func registerRoute(path, handler, moduleName string) {
+	routesFile := filepath.Join(moduleName, "routes.go")
 
-	// Detectar el nombre del módulo desde go.mod
-	moduleName := "app"
-	if data, err := os.ReadFile("go.mod"); err == nil {
-		lines := strings.Split(string(data), "\n")
-		for _, line := range lines {
-			if strings.HasPrefix(line, "module ") {
-				moduleName = strings.TrimSpace(strings.TrimPrefix(line, "module"))
-				break
-			}
-		}
-	}
-
-	// Detectar si views está en ruta relativa o absoluta para ajustar import
 	viewImport := fmt.Sprintf("\"%s/views\"", moduleName)
-	if _, err := os.Stat("app/views"); err == nil && moduleName == "app" {
-		// Significa que estamos dentro de carpeta /app en estructura
-		viewImport = "\"app/app/views\""
-	}
 
-	// Si no existe routes.go, crearlo
+	// Si no existe routes.go, crearlo con el import básico
 	if _, err := os.Stat(routesFile); os.IsNotExist(err) {
 		base := fmt.Sprintf(`package main
 
@@ -125,11 +108,11 @@ func SetupRoutes(mux *http.ServeMux) {
 		return
 	}
 
-	// Leer el archivo
+	// Leer el archivo existente
 	data, _ := os.ReadFile(routesFile)
 	lines := strings.Split(string(data), "\n")
 
-	// Agregar el import si no está
+	// Verificar si el import ya existe
 	hasImport := false
 	for _, line := range lines {
 		if strings.Contains(line, viewImport) {
@@ -164,7 +147,7 @@ func SetupRoutes(mux *http.ServeMux) {
 		}
 	}
 
-	// Guardar archivo actualizado
+	// Guardar cambios
 	output := strings.Join(lines, "\n")
 	os.WriteFile(routesFile, []byte(output), 0644)
 

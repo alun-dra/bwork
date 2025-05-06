@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -28,8 +29,10 @@ func main() {
 		if len(os.Args) < 4 {
 			fmt.Println("Uso: bwork generate <tipo> <nombre>")
 		} else {
-			runGenerate(os.Args[2], os.Args[3])
+			moduleName := getModuleName() // <- debes implementar esta función
+			runGenerate(os.Args[2], os.Args[3], moduleName)
 		}
+
 	case "run":
 		runServer()
 	case "help":
@@ -38,6 +41,24 @@ func main() {
 		fmt.Println("Comando no reconocido:", os.Args[1])
 		printHelp()
 	}
+}
+
+func getModuleName() string {
+	data, err := os.ReadFile("go.mod")
+	if err != nil {
+		fmt.Println("❌ No se pudo leer go.mod:", err)
+		return "app"
+	}
+
+	lines := strings.Split(string(data), "\n")
+	for _, line := range lines {
+		if strings.HasPrefix(line, "module ") {
+			return strings.TrimSpace(strings.TrimPrefix(line, "module"))
+		}
+	}
+
+	// Valor por defecto si no se encuentra la línea "module"
+	return "app"
 }
 
 func printHelp() {
