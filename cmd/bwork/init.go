@@ -98,12 +98,12 @@ func SetupRoutes(mux *http.ServeMux) {
 	os.WriteFile(filepath.Join(moduleName, "main.go"), []byte(mainContent), 0644)
 	os.WriteFile(filepath.Join(moduleName, "routes.go"), []byte(routesContent), 0644)
 
-	// Copiar módulo router a bwork_modules/router
 	copyRouterModule(moduleName)
 	createRouterGoMod(moduleName)
 	addReplaceDirective(moduleName)
 	addRequireDirective(moduleName)
 	addRouterRequireDirective(moduleName)
+	generateCorsFile(moduleName)
 
 	// Crear README.md
 	readmeContent := "# 🚀 Proyecto creado con BWORK\n\n" +
@@ -298,4 +298,38 @@ func addRouterRequireDirective(moduleName string) {
 		}
 		fmt.Println("📥 Línea 'require' añadida a go.mod raíz ✅")
 	}
+}
+
+func generateCorsFile(moduleName string) {
+	corsContent := `package config
+
+import "net/http"
+
+func SetupCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+`
+
+	configDir := filepath.Join(moduleName, "config")
+	os.MkdirAll(configDir, 0755)
+
+	filePath := filepath.Join(configDir, "cors.go")
+	err := os.WriteFile(filePath, []byte(corsContent), 0644)
+	if err != nil {
+		fmt.Println("❌ Error al generar archivo CORS:", err)
+		return
+	}
+
+	fmt.Println("🛡️ Archivo 'cors.go' generado correctamente en config/ ✅")
 }
