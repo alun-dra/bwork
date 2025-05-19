@@ -87,11 +87,11 @@ func %s(w http.ResponseWriter, r *http.Request) {
 }
 
 func registerRoute(path, handler, moduleName string) {
-	routesFile := "routes.go" // 👈 CORREGIDO
+	routesFile := filepath.Join(moduleName, "routes.go") // ✅ corregido
 
-	viewImport := fmt.Sprintf("\"%s/views\"", moduleName)
+	viewImport := fmt.Sprintf("\"%s/views\"", moduleName) // ✅ ejemplo: "back/views"
 
-	// Si no existe routes.go, crearlo con el import básico
+	// Si no existe routes.go, crearlo con base mínima
 	if _, err := os.Stat(routesFile); os.IsNotExist(err) {
 		base := fmt.Sprintf(`package main
 
@@ -108,11 +108,11 @@ func SetupRoutes(mux *http.ServeMux) {
 		return
 	}
 
-	// Leer el archivo existente
+	// Leer archivo existente
 	data, _ := os.ReadFile(routesFile)
 	lines := strings.Split(string(data), "\n")
 
-	// Verificar si el import ya existe
+	// Agregar import si falta
 	hasImport := false
 	for _, line := range lines {
 		if strings.Contains(line, viewImport) {
@@ -129,7 +129,7 @@ func SetupRoutes(mux *http.ServeMux) {
 		}
 	}
 
-	// Agregar la ruta si no está
+	// Agregar ruta si falta
 	routeLine := fmt.Sprintf("\tmux.HandleFunc(\"/%s\", views.%s)", path, handler)
 	hasRoute := false
 	for _, line := range lines {
@@ -147,7 +147,7 @@ func SetupRoutes(mux *http.ServeMux) {
 		}
 	}
 
-	// Guardar cambios
+	// Guardar archivo actualizado
 	output := strings.Join(lines, "\n")
 	os.WriteFile(routesFile, []byte(output), 0644)
 
