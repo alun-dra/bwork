@@ -87,9 +87,9 @@ func %s(w http.ResponseWriter, r *http.Request) {
 }
 
 func registerRoute(path, handler, moduleName string) {
-	routesFile := filepath.Join(moduleName, "routes.go")
+	routesFile := "routes.go" // 👈 CORREGIDO
 
-	viewImport := "\"" + moduleName + "/views\""
+	viewImport := fmt.Sprintf("\"%s/views\"", moduleName)
 
 	// Si no existe routes.go, crearlo con el import básico
 	if _, err := os.Stat(routesFile); os.IsNotExist(err) {
