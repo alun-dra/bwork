@@ -159,7 +159,7 @@ func SetupRoutes(mux *http.ServeMux) {
 		"Y actualiza los imports en `main.go`, `routes.go`, etc.\n\n" +
 		"---\n\n" +
 		"## 🧠 Contribuye\n\n" +
-		"Este proyecto fue generado con 💡 usando [BWORK CLI](https://github.com/alun-dra/bwork).\n" +
+		"\n" +
 		"Si quieres colaborar o sugerir mejoras, ¡haz un PR o crea un issue!\n"
 
 	os.WriteFile("README.md", []byte(readmeContent), 0644)
