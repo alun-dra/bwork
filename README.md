@@ -95,7 +95,7 @@ DB_NAME=bworkdb
 
 ## 💖 ¿Te gusta el proyecto?
 
-Si este framework te ha ayudado o quieres apoyar su desarrollo, ¡considera apoyar en GitHub Sponsors! (https://github.com/sponsors/alun-dra)[https://github.com/sponsors/alun-dra]
+Si este framework te ha ayudado o quieres apoyar su desarrollo, ¡considera apoyar en GitHub Sponsors! https://github.com/sponsors/alun-dra
 
 > Próximamente: más plantillas, middlewares listos para producción y documentación interactiva ✨
 
