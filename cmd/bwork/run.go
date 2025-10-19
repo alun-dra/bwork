@@ -5,17 +5,18 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
 // --- configuración del watcher ---
 var (
-	watchDirs = []string{
-		".", "controllers", "views", "models", "routes", "config",
-	}
+	watchDirs    = []string{".", "controllers", "views", "models", "routes", "config"}
 	watchExts    = []string{".go", ".html", ".tmpl", ".env"}
 	ignoreDirs   = []string{".git", "vendor", "node_modules", "bwork_modules/router"}
 	pollInterval = 600 * time.Millisecond
@@ -23,19 +24,19 @@ var (
 )
 
 func runServer() {
-	target := getModuleName() // tu función actual
-	fmt.Printf("🚀 Ejecutando servidor con hot-reload desde %s...\n", target)
+	target := detectEntrypoint() // <- NUEVO
+	fmt.Printf("🚀 Ejecutando servidor con hot-reload usando: %s\n", strings.Join(target, " "))
 
 	// arranque inicial
 	ctx, cancel := context.WithCancel(context.Background())
 	cmd := start(ctx, target)
 
-	// canal para reinicios y para signals
+	// signals
 	restartCh := make(chan struct{}, 1)
-	stopCh := make(chan os.Signal, 1)
-	installSignalHandler(stopCh)
+	quitCh := make(chan os.Signal, 1)
+	signal.Notify(quitCh, os.Interrupt, syscall.SIGTERM)
 
-	// watcher en goroutine
+	// watcher
 	go func() {
 		if err := watchAndNotify(restartCh); err != nil {
 			fmt.Println("⚠️  watcher error:", err)
@@ -46,19 +47,15 @@ func runServer() {
 	for {
 		select {
 		case <-restartCh:
-			// debounce simple
 			time.Sleep(debounceWin)
-
 			mu.Lock()
-			// matar proceso actual
 			_ = stop(cmd)
-			// nuevo contexto/proceso
 			cancel()
 			ctx, cancel = context.WithCancel(context.Background())
 			cmd = start(ctx, target)
 			mu.Unlock()
 
-		case <-stopCh:
+		case <-quitCh:
 			_ = stop(cmd)
 			cancel()
 			return
@@ -66,17 +63,25 @@ func runServer() {
 	}
 }
 
-// lanza `go run` y conecta stdio
-func start(ctx context.Context, target string) *exec.Cmd {
-	args := []string{"run", target}
-	// si target es carpeta/archivo normaliza
-	if fi, err := os.Stat(target); err == nil && fi.IsDir() {
-		args = []string{"run", "./" + target}
+// Detecta la mejor forma de ejecutar el entrypoint.
+// Preferencias: "go run ./main.go" si existe; si no, "go run ."
+func detectEntrypoint() []string {
+	if _, err := os.Stat("main.go"); err == nil {
+		return []string{"run", "./main.go"}
 	}
-	if strings.HasSuffix(strings.ToLower(target), ".go") {
-		args = []string{"run", target}
+	// soporta proyectos con cmd/app/main.go o app/main.go si quisieras:
+	candidates := []string{"cmd/app/main.go", "app/main.go"}
+	for _, c := range candidates {
+		if _, err := os.Stat(c); err == nil {
+			return []string{"run", "./" + c}
+		}
 	}
+	// por defecto, módulo actual
+	return []string{"run", "."}
+}
 
+// lanza `go run` y conecta stdio
+func start(ctx context.Context, args []string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, "go", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -88,7 +93,12 @@ func start(ctx context.Context, target string) *exec.Cmd {
 	}
 
 	go func() {
-		_ = cmd.Wait() // evita zombies
+		err := cmd.Wait()
+		if err != nil {
+			fmt.Println("💥 Proceso del servidor terminó con error:", err)
+		} else {
+			fmt.Println("🔚 Proceso del servidor terminó.")
+		}
 	}()
 
 	return cmd
@@ -99,18 +109,11 @@ func stop(cmd *exec.Cmd) error {
 	if cmd == nil || cmd.Process == nil {
 		return nil
 	}
-	// en *nix intenta SIGINT primero
-	if sendInterrupt(cmd) == nil {
-		// dar tiempo a cerrar
-		done := make(chan struct{})
-		go func() { cmd.Wait(); close(done) }()
-		select {
-		case <-done:
-			return nil
-		case <-time.After(1 * time.Second):
-		}
+	// Unix: SIGINT; Windows: Kill directo
+	if runtime.GOOS != "windows" {
+		_ = cmd.Process.Signal(syscall.SIGINT)
+		time.Sleep(400 * time.Millisecond)
 	}
-	// fuerza
 	return cmd.Process.Kill()
 }
 
@@ -128,13 +131,11 @@ func watchAndNotify(restart chan<- struct{}) error {
 				if shouldIgnoreDir(d.Name()) {
 					return filepath.SkipDir
 				}
-				// limitar a watchDirs
 				if !isWithinWatchDirs(path) {
 					return nil
 				}
 				return nil
 			}
-
 			if !hasWatchedExt(path) {
 				return nil
 			}
@@ -143,9 +144,7 @@ func watchAndNotify(restart chan<- struct{}) error {
 				return nil
 			}
 			cur[path] = info.ModTime()
-			// cambio nuevo o modificado
 			if t, ok := prev[path]; !ok || info.ModTime().After(t) {
-				// evita spam inicial: solo dispara si prev ya tenía datos
 				if len(prev) > 0 {
 					fmt.Println("🔁 cambio detectado en:", path)
 					select {
@@ -159,7 +158,6 @@ func watchAndNotify(restart chan<- struct{}) error {
 		if err != nil {
 			fmt.Println("watch walk error:", err)
 		}
-
 		prev = cur
 		time.Sleep(pollInterval)
 	}
@@ -174,7 +172,6 @@ func hasWatchedExt(path string) bool {
 	}
 	return false
 }
-
 func shouldIgnoreDir(name string) bool {
 	for _, ig := range ignoreDirs {
 		if name == ig {
@@ -183,47 +180,17 @@ func shouldIgnoreDir(name string) bool {
 	}
 	return false
 }
-
 func isWithinWatchDirs(path string) bool {
-	// "." siempre vale
 	if path == "." {
 		return true
 	}
-	// path comienza con cualquiera de los watchDirs
 	for _, d := range watchDirs {
 		if d == "." {
 			continue
 		}
-		// normaliza separadores
 		if strings.HasPrefix(filepath.ToSlash(path)+"/", d+"/") {
 			return true
 		}
 	}
 	return false
-}
-
-// --- señales cross-platform ---
-func installSignalHandler(stopCh chan<- os.Signal) {
-	// stdlib soporta SIGINT/SIGTERM; en Windows SIGINT llega con Ctrl+C.
-	// usamos Notify en main.go si ya lo tienes; si no:
-	go func() {
-		// bloquea lectura de Stdin para Ctrl+C (fallback simple)
-		buf := make([]byte, 1)
-		for {
-			_, err := os.Stdin.Read(buf)
-			if err != nil {
-				stopCh <- os.Interrupt
-				return
-			}
-		}
-	}()
-}
-
-func sendInterrupt(cmd *exec.Cmd) error {
-	// en Go stdlib, en Unix se puede Signal(syscall.SIGINT)
-	// para evitar syscall en este snippet y mantener stdlib,
-	// usamos Process.Kill si no hay soporte. Si quieres SIGINT:
-	//   import "syscall"
-	//   return cmd.Process.Signal(syscall.SIGINT)
-	return fmt.Errorf("interrupt not sent")
 }
