@@ -1,4 +1,3 @@
-// cmd/bwork/run.go
 package main
 
 import (
@@ -39,7 +38,7 @@ func startChild(ctx context.Context, module string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, "go", args...)
 	cmd.Stdout, cmd.Stderr, cmd.Stdin = os.Stdout, os.Stderr, os.Stdin
 
-	setProcessGroup(cmd) // ← OS-specific (no-op en Win, pgid en Unix)
+	setProcessGroup(cmd)
 
 	if err := cmd.Start(); err != nil {
 		fmt.Println("❌ error al iniciar el servidor:", err)
@@ -53,9 +52,8 @@ func stopChild(cmd *exec.Cmd, port int) error {
 	if cmd == nil || cmd.Process == nil {
 		return nil
 	}
-	killProcessTree(cmd.Process.Pid) // ← OS-specific
+	killProcessTree(cmd.Process.Pid)
 
-	// esperar a que el puerto quede libre
 	deadline := time.Now().Add(3 * time.Second)
 	for time.Now().Before(deadline) {
 		if !portInUse(port) {

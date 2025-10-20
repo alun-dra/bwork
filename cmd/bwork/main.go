@@ -29,7 +29,7 @@ func main() {
 		if len(os.Args) < 4 {
 			fmt.Println("Uso: bwork generate <tipo> <nombre>")
 		} else {
-			moduleName := getModuleName() // <- debes implementar esta función
+			moduleName := getModuleName()
 			runGenerate(os.Args[2], os.Args[3], moduleName)
 		}
 
@@ -57,7 +57,6 @@ func getModuleName() string {
 		}
 	}
 
-	// Valor por defecto si no se encuentra la línea "module"
 	return "app"
 }
 

@@ -12,6 +12,5 @@ func setProcessGroup(cmd *exec.Cmd) {
 }
 
 func killProcessTree(pid int) {
-	// mata todo el árbol (go.exe + binario hijo)
 	_ = exec.Command("taskkill", "/T", "/F", "/PID", strconv.Itoa(pid)).Run()
 }
