@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -64,7 +65,29 @@ func stopChild(cmd *exec.Cmd) error {
 	if cmd == nil || cmd.Process == nil {
 		return nil
 	}
-	return cmd.Process.Kill()
+
+	// Matar proceso actual
+	_ = cmd.Process.Kill()
+
+	// 🔁 Esperar a que el puerto se libere (máx 3 segundos)
+	for i := 0; i < 30; i++ {
+		if !portInUse(8081) { // usa tu puerto
+			return nil
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	return fmt.Errorf("⚠️ puerto 8081 aún ocupado después de matar el proceso")
+}
+
+// portInUse comprueba si el puerto está ocupado
+func portInUse(port int) bool {
+	addr := fmt.Sprintf("localhost:%d", port)
+	l, err := net.Listen("tcp", addr)
+	if err != nil {
+		return true // está en uso
+	}
+	_ = l.Close()
+	return false
 }
 
 // ---- watcher por sondeo (stdlib) ----
