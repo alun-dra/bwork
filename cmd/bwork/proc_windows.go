@@ -1,0 +1,17 @@
+//go:build windows
+
+package main
+
+import (
+	"os/exec"
+	"strconv"
+)
+
+func setProcessGroup(cmd *exec.Cmd) {
+	// no-op en Windows
+}
+
+func killProcessTree(pid int) {
+	// mata todo el árbol (go.exe + binario hijo)
+	_ = exec.Command("taskkill", "/T", "/F", "/PID", strconv.Itoa(pid)).Run()
+}
