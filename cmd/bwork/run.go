@@ -43,14 +43,9 @@ func runOnce(module string, changes <-chan struct{}) {
 
 // ---- helpers de proceso ----
 
+// lanza `go run ./<module>` (siempre el paquete, no un archivo suelto)
 func startChild(ctx context.Context, module string) *exec.Cmd {
-	args := []string{"run"}
-	mainFile := filepath.Join(module, "main.go")
-	if fileExists(mainFile) {
-		args = append(args, "./"+filepath.ToSlash(mainFile))
-	} else {
-		args = append(args, "./"+filepath.ToSlash(module))
-	}
+	args := []string{"run", "./" + filepath.ToSlash(module)}
 
 	cmd := exec.CommandContext(ctx, "go", args...)
 	cmd.Stdout = os.Stdout
