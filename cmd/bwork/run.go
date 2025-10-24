@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+// -------------------- ENTRYPOINT --------------------
+
 func runServer() {
 	module := getModuleName()
 	port := detectPort(module)
@@ -33,10 +35,24 @@ func runServer() {
 	}
 }
 
+// -------------------- START / STOP --------------------
+
 func startChild(ctx context.Context, module string) *exec.Cmd {
 	args := []string{"run", "./" + filepath.ToSlash(module)}
 	cmd := exec.CommandContext(ctx, "go", args...)
 	cmd.Stdout, cmd.Stderr, cmd.Stdin = os.Stdout, os.Stderr, os.Stdin
+
+	// 🔎 buscar go.mod y ejecutar desde el root del módulo
+	if root, err := findModuleRoot(); err == nil {
+		cmd.Dir = root
+	} else {
+		fmt.Println("⚠️ no se encontró go.mod, ejecutando desde el directorio actual")
+	}
+
+	// ✅ forzar módulos ON (evita que Linux busque paquetes en stdlib)
+	env := os.Environ()
+	env = append(env, "GO111MODULE=on", "GOWORK=off")
+	cmd.Env = env
 
 	setProcessGroup(cmd)
 
@@ -63,6 +79,29 @@ func stopChild(cmd *exec.Cmd, port int) error {
 	}
 	return fmt.Errorf("⚠️ puerto %d aún ocupado tras reinicio", port)
 }
+
+// -------------------- MODULE DETECTION --------------------
+
+// busca go.mod subiendo desde el cwd y devuelve su directorio
+func findModuleRoot() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir, nil
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+	return "", fmt.Errorf("no se encontró go.mod en esta ruta ni superiores")
+}
+
+// -------------------- NETWORK HELPERS --------------------
 
 func portInUse(port int) bool {
 	l, err := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(port))
@@ -98,7 +137,7 @@ func detectPort(module string) int {
 	return 8081
 }
 
-// -------------------- Watcher (polling stdlib) --------------------
+// -------------------- WATCHER --------------------
 
 func watch(module string, out chan<- struct{}) {
 	root := module
