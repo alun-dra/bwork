@@ -107,7 +107,7 @@ func SetupRoutes(mux *http.ServeMux) {
 
 	// Crear README.md
 	readmeContent := "# 🚀 Proyecto creado con BWORK\n\n" +
-		"Este backend fue generado con [BWORK](https://github.com/alun-dra/bwork), un framework CLI para construir APIs Go de forma rápida y modular.\n\n" +
+		"Este backend fue generado con [BWORK](https://github.com/alun-dra/bwork), un framework para construir APIs Go de forma rápida y modular.\n\n" +
 		"---\n\n" +
 		"## 📁 Estructura del proyecto\n\n" +
 		"```bash\n" +
