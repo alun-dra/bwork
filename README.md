@@ -1,6 +1,6 @@
 # 🚀 BWORK
 
-**BWORK** es un framework moderno escrito en **Go** que permite crear APIs robustas, rápidas y modulares en minutos. Con una estructura clara inspirada en Django y un CLI potente, BWORK está diseñado para escalar sin perder simplicidad.
+**BWORK** es un framework moderno escrito en **Go** que permite crear APIs robustas, rápidas y modulares en minutos. BWORK está diseñado para escalar sin perder simplicidad.
 
 ---
 
